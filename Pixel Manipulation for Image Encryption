@@ -1,0 +1,88 @@
+from PIL import Image
+import numpy as np
+from pathlib import Path
+
+def encrypt_image(input_path, output_path, key):
+    # Open image
+    img = Image.open(input_path)
+    img_array = np.array(img, dtype=np.int16)
+
+    # Apply encryption formula
+    encrypted_array = (img_array + key) % 256
+
+    # Swap rows (extra security)
+    encrypted_array = encrypted_array[::-1]
+
+    # Save encrypted image
+    encrypted_img = Image.fromarray(encrypted_array.astype(np.uint8))
+    encrypted_img.save(output_path)
+    print("Image Encrypted Successfully!")
+
+def decrypt_image(input_path, output_path, key):
+    # Open encrypted image
+    img = Image.open(input_path)
+    img_array = np.array(img, dtype=np.int16)
+
+    # Reverse row swap
+    decrypted_array = img_array[::-1]
+
+    # Apply decryption formula
+    decrypted_array = (decrypted_array - key) % 256
+
+    # Save decrypted image
+    decrypted_img = Image.fromarray(decrypted_array.astype(np.uint8))
+    decrypted_img.save(output_path)
+    print("Image Decrypted Successfully!")
+
+
+def get_menu_choice():
+    while True:
+        raw_choice = input("Enter choice (1 or 2): ").strip()
+        if raw_choice in {"1", "2"}:
+            return int(raw_choice)
+        print("Invalid choice. Please enter 1 for Encrypt or 2 for Decrypt.")
+
+
+def get_key():
+    while True:
+        raw_key = input("Enter secret key (0-255): ").strip()
+        if raw_key.isdigit() and 0 <= int(raw_key) <= 255:
+            return int(raw_key)
+        print("Invalid key. Enter a number between 0 and 255.")
+
+
+def get_existing_image_path(prompt):
+    while True:
+        raw_path = input(prompt).strip().strip('"').strip("'")
+        if not raw_path:
+            print("Path cannot be empty. Example: pic.jpg or C:/Users/amrut/Desktop/image.jpg")
+            continue
+
+        file_path = Path(raw_path).expanduser()
+        if not file_path.is_absolute():
+            file_path = Path.cwd() / file_path
+
+        if file_path.exists() and file_path.is_file():
+            return str(file_path)
+
+        print(f"File not found: {file_path}")
+
+# ===== USER INPUT =====
+print("1. Encrypt Image")
+print("2. Decrypt Image")
+
+choice = get_menu_choice()
+key = get_key()
+
+if choice == 1:
+    input_path = get_existing_image_path("Enter image path (example: pic.jpg or C:/Users/amrut/Desktop/image.jpg): ")
+    encrypt_image(input_path, "encrypted.jpg", key)
+    print(f"Saved to: {Path.cwd() / 'encrypted.jpg'}")
+
+elif choice == 2:
+    input_path = get_existing_image_path("Enter encrypted image path: ")
+    decrypt_image(input_path, "decrypted.jpg", key)
+    print(f"Saved to: {Path.cwd() / 'decrypted.jpg'}")
+
+else:
+    print("Invalid choice!")
